@@ -286,17 +286,33 @@ export function ModelSelect(
         >
           {pane === 'root' && (
             <>
-              <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { setPane('provider') }}>
-                <span className={css.cellLabel}>{t('menu.model')}</span>
-                <span className={css.cellValue}>{modelLabel}</span>
+              <div
+                role="menuitem"
+                tabIndex={0}
+                className={css.cell}
+                onClick={() => { setPane('provider') }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') setPane('provider')
+                }}
+              >
+                <span className={css.cellLabel} style={{ color: '#202124', WebkitTextFillColor: '#202124' }}>{t('menu.model')}</span>
+                <span className={css.cellValue} style={{ color: '#5f6368', WebkitTextFillColor: '#5f6368' }}>{modelLabel}</span>
                 <IconChevronRightOutline14 className={css.cellChevron} />
-              </button>
+              </div>
               {reasoning !== undefined && (
-                <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { setPane('effort') }}>
-                  <span className={css.cellLabel}>{t('menu.effort')}</span>
-                  <span className={css.cellValue}>{effortLabel}</span>
+                <div
+                  role="menuitem"
+                  tabIndex={0}
+                  className={css.cell}
+                  onClick={() => { setPane('effort') }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') setPane('effort')
+                  }}
+                >
+                  <span className={css.cellLabel} style={{ color: '#202124', WebkitTextFillColor: '#202124' }}>{t('menu.effort')}</span>
+                  <span className={css.cellValue} style={{ color: '#5f6368', WebkitTextFillColor: '#5f6368' }}>{effortLabel}</span>
                   <IconChevronRightOutline14 className={css.cellChevron} />
-                </button>
+                </div>
               )}
             </>
           )}
