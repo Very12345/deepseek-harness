@@ -237,6 +237,15 @@ export function ModelSelect(
     return (node: HTMLButtonElement | null) => { itemRefs.current[at] = node }
   }
 
+  const menuBottom = (): number => {
+    const triggerTop = triggerRef.current?.getBoundingClientRect().top ?? window.innerHeight
+    const mobile = window.innerWidth <= 1280
+    const composerTop = mobile
+      ? triggerRef.current?.closest<HTMLElement>('[data-composer-card]')?.getBoundingClientRect().top
+      : undefined
+    return window.innerHeight - (composerTop ?? triggerTop) + 10
+  }
+
   return (
     <div ref={rootRef} className={css.root} onKeyDown={onRootKeyDown} onBlur={onBlur}>
       <button
@@ -269,7 +278,7 @@ export function ModelSelect(
           className={css.menu}
           data-pane={pane}
           style={{
-            bottom: `${window.innerHeight - (triggerRef.current?.getBoundingClientRect().top ?? window.innerHeight) + 10}px`,
+            bottom: `${menuBottom()}px`,
           }}
           role="menu"
           aria-label={t('menu.aria')}
