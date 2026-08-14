@@ -333,7 +333,14 @@
 
   .menu {
     position: fixed;
-    inset: auto 12px calc(84px + env(safe-area-inset-bottom)) 12px;
+    /* ModelSelect computes a desktop bottom offset inline. Android embeds the
+       Web UI below a native app bar, so that coordinate lands inside the
+       composer and the sheet looks like an empty strip. Pin every edge used
+       by the mobile sheet explicitly and override that desktop inline value. */
+    top: auto !important;
+    right: 12px !important;
+    bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+    left: 12px !important;
     z-index: 2200;
     box-sizing: border-box;
     width: auto;
