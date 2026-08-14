@@ -367,10 +367,37 @@
   .option {
     min-height: 48px;
     padding-inline: 12px;
-    color: var(--dsw-alias-label-primary, #202124);
+    /* The menu is portalled into the shell overlay. Some Android WebViews do
+       not carry the theme custom-property chain into that overlay during the
+       first plugin frame, which previously produced a white sheet with fully
+       transparent labels. Keep an explicit, theme-aware text fallback. */
+    color: #202124 !important;
+    -webkit-text-fill-color: #202124;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .cellValue,
+  .cellChevron,
+  .providerCheck {
+    color: #5f6368 !important;
+    -webkit-text-fill-color: #5f6368;
   }
 
   .groupTitle {
     padding: 8px 12px 5px;
+  }
+
+  :global(body[data-ds-dark-theme]) .cell,
+  :global(body[data-ds-dark-theme]) .option {
+    color: #f5f6f7 !important;
+    -webkit-text-fill-color: #f5f6f7;
+  }
+
+  :global(body[data-ds-dark-theme]) .cellValue,
+  :global(body[data-ds-dark-theme]) .cellChevron,
+  :global(body[data-ds-dark-theme]) .providerCheck {
+    color: #aeb4bd !important;
+    -webkit-text-fill-color: #aeb4bd;
   }
 }
