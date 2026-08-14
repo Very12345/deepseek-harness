@@ -23,13 +23,61 @@
 }
 
 .sidebarCol {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   overflow: hidden;
   background: var(--dsw-specific-sidebar-fill);
   border-right: 1px solid var(--dsw-alias-border-l1);
 }
 
+/* sai mobile shell: the sidebar is a real overlay drawer. Opening it never
+   participates in the grid solve, so the conversation keeps its full width. */
+.frame[data-narrow] .sidebarCol {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 2001;
+  height: 100%;
+  max-width: calc(100vw - 40px);
+  border-right: 1px solid var(--dsw-alias-border-l2);
+  box-shadow: var(--dsw-shadow-lv3);
+  transform: translateX(-105%);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform var(--ds-transition-duration-slow) var(--ds-ease-in-out),
+    visibility 0s linear var(--ds-transition-duration-slow);
+}
+
+.frame[data-narrow][data-sidebar-open] .sidebarCol {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.mobileScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2000;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(8, 14, 28, 0.34);
+  cursor: default;
+  animation: sai-mobile-scrim-in 160ms ease-out;
+}
+
+@keyframes sai-mobile-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .centerCol {
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -37,6 +85,8 @@
 }
 
 .detailsCol {
+  grid-column: 3;
+  grid-row: 1;
   min-width: 0;
   overflow: hidden;
   border-left: 1px solid var(--dsw-alias-border-l2);
@@ -110,7 +160,7 @@
 .overlayLayer {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  z-index: 3000;
   pointer-events: none;
 }
 

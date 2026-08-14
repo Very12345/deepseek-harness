@@ -87,7 +87,7 @@ const MEASURE_STYLE: CSSProperties = { visibility: 'hidden', left: 0, top: 0 }
  * by a hairline; they stay visible while the items above scroll.
  * @returns anchor wrapper with the conditional list.
  */
-export function Menu({ open, anchor, items, selectedId, selectedIds, onSelect, onClose, align = 'start', side = 'bottom', portal = false, closeOnPointerLeave = false, dense = false, compact = false, getAnchorRect, footer, className }: {
+export function Menu({ open, anchor, items, selectedId, selectedIds, onSelect, onClose, align = 'start', side = 'bottom', portal = false, closeOnPointerLeave = false, dense = false, compact = false, mobileSheet = 'content', getAnchorRect, footer, className }: {
   open: boolean
   anchor: ReactNode
   items: readonly MenuEntry[]
@@ -102,6 +102,8 @@ export function Menu({ open, anchor, items, selectedId, selectedIds, onSelect, o
   closeOnPointerLeave?: boolean
   dense?: boolean
   compact?: boolean
+  /** Mobile-only panel height. Desktop dropdown geometry is unchanged. */
+  mobileSheet?: 'content' | 'medium' | 'large'
   getAnchorRect?: () => DOMRect | null
   className?: string
 }) {
@@ -268,6 +270,7 @@ export function Menu({ open, anchor, items, selectedId, selectedIds, onSelect, o
       className={clsx(css.list, dense && css.denseList, compact && css.compactList, scrollable && css.scrollable, portal && css.portal, side === 'top' && !portal && css.sideTop, align === 'end' && !portal && css.alignEnd)}
       style={portal ? fixedPos ?? MEASURE_STYLE : undefined}
       role="menu"
+      data-mobile-sheet={mobileSheet}
       // React portals bubble synthetic events through the REACT tree: without
       // this stop, an item click re-fires the anchor row's own onClick
       // (open/toggle) after onSelect.
@@ -296,7 +299,10 @@ export function Menu({ open, anchor, items, selectedId, selectedIds, onSelect, o
       onPointerLeave={closeOnPointerLeave ? () => { if (open) armClose() } : undefined}
     >
       {anchor}
-      {portal ? (list !== false && createPortal(list, document.body)) : list}
+      {portal ? (list !== false && createPortal(
+        list,
+        document.querySelector<HTMLElement>('[data-shell-overlay]') ?? document.body,
+      )) : list}
     </span>
   )
 }

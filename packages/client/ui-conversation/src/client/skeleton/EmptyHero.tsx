@@ -7,7 +7,7 @@
 import { useId } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import {
-  FishLogo, IconChevronDownOutline14, IconFolderClose16, IconFolderOpen16,
+  IconChevronDownOutline14, IconFolderClose16, IconFolderOpen16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { workspaceTitleOf } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConversationSlotProps } from '../contract/slots.ts'
@@ -15,6 +15,19 @@ import css from './HeroShell.module.css'
 
 /** The owner's locale seat type, passed to hero chrome as a plain prop. */
 type HeroTranslate = ConversationSlotProps['t']
+
+/** Monochrome sai mark: a single-direction sailboat, inheriting headline ink. */
+function SailLogo({ className }: { className?: string | undefined }) {
+  return (
+    <svg className={className} width="38" height="32" viewBox="0 0 38 32" fill="none" aria-hidden="true">
+      <path d="M18.3 2.5v19.2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M20 3.6v16.7h14.1C30.8 11.2 26.1 6.5 20 3.6Z" fill="currentColor" />
+      <path d="M16.5 8.2v12H5.4c2.6-6 6.2-9.9 11.1-12Z" fill="currentColor" fillOpacity=".72" />
+      <path d="M2.3 22.1c9.8 2.8 20.3 2.8 33.4-.5-2.9 6.1-8 8.1-16.2 8.1-8.9 0-14.2-2.1-17.2-7.6Z" fill="currentColor" />
+      <path d="M6 30.2c7.9-1.5 16.7-1.5 25.3 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity=".42" />
+    </svg>
+  )
+}
 
 /**
  * Basename label for the workspace chip (the shared derivation);
@@ -117,9 +130,8 @@ export function HeroShell({ t, children }: HeroShellProps) {
     <div className={css.root}>
       <div className={css.stack}>
         <div className={css.headline}>
-          {/* figma 34:10412: fish 34×25 leading the headline, gap 10. */}
           <span className={css.fishHitbox}>
-            <FishLogo size={34} className={css.fish} />
+            <SailLogo className={css.fish} />
           </span>
           <span className={css.headlineText}>{t('hero.headline')}</span>
           <span className={css.previewBadge}>{t('hero.preview')}</span>

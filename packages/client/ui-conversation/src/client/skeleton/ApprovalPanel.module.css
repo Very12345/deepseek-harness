@@ -101,3 +101,26 @@
   color: var(--dsw-alias-state-error-primary);
   border-color: transparent;
 }
+
+/* Phone approval is an in-flow fixed footer surface, not a floating desktop
+   capsule. It stays inside the sticky composer seat immediately above the
+   Android keyboard and keeps every decision reachable without covering chat. */
+@media (max-width: 600px) {
+  .root {
+    width: 100%;
+    padding: 4px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .card {
+    max-width: none;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .strip { padding: 6px 10px; }
+  .body { max-height: 88px; padding: 8px 10px 0; }
+  .headline { font-size: 13px; line-height: 19px; }
+  .command { font-size: 11px; line-height: 17px; }
+  .actionRow { gap: 6px; padding: 8px 10px 10px; }
+  .actionRow > button { flex: 1; min-height: 38px; }
+}

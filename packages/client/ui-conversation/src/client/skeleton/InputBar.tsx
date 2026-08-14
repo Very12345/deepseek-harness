@@ -747,14 +747,20 @@ export function InputBar({
             </Tooltip>
             <div className={css.modes}>
               {accessSelect}
-              {renderSlot('conversation.input.plan', { locked })}
+              <div className={css.planSeat}>
+                {renderSlot('conversation.input.plan', { locked })}
+              </div>
             </div>
-            {leftItems}
+            <div className={css.leftExtras}>{leftItems}</div>
           </div>
           <div className={css.trailing}>
-            {rightItems}
-            {renderSlot('conversation.input.model', { locked: modelSeatLocked })}
-            <ContextMeter useProjection={useProjection} t={t} />
+            <div className={css.rightExtras}>{rightItems}</div>
+            <div className={css.modelSeat}>
+              {renderSlot('conversation.input.model', { locked: modelSeatLocked })}
+            </div>
+            <div className={css.contextMeter}>
+              <ContextMeter useProjection={useProjection} t={t} />
+            </div>
             {interruptible && (
               <Tooltip label={t('input.stop')} side="top" delayMs={500}>
                 <button
