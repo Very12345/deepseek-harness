@@ -339,7 +339,7 @@
     width: auto;
     height: auto;
     min-height: 0;
-    max-height: 360px;
+    max-height: min(360px, calc(100dvh - 210px));
     padding: 10px;
     border-radius: 22px;
     border-color: color-mix(in srgb, var(--dsw-alias-label-primary, #202124) 16%, transparent);
@@ -350,7 +350,7 @@
 
   .menu[data-pane='model'],
   .menu[data-pane='provider'] {
-    height: 360px;
+    height: auto;
   }
 
   .groups {
