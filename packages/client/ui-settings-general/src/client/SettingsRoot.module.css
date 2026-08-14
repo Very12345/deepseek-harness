@@ -224,3 +224,74 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* Phone settings are a full-width sheet. The desktop 188px rail otherwise
+   leaves only a few characters of content beside it. */
+@media (max-width: 1280px) {
+  .overlay {
+    z-index: 3200;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  .panel {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    flex-direction: column;
+    border-radius: 20px;
+  }
+
+  .nav {
+    width: 100%;
+    gap: 10px;
+    padding: 16px 12px 0;
+    border-bottom: 1px solid var(--dsw-alias-border-l1);
+  }
+
+  .navTitle {
+    padding: 0 8px;
+    font-size: 18px;
+    line-height: 26px;
+  }
+
+  .navList {
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 0 0 10px;
+    scrollbar-width: none;
+  }
+
+  .navList::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navCell {
+    flex: 0 0 auto;
+    width: auto;
+    height: 40px;
+    padding-inline: 12px;
+  }
+
+  .content {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .header {
+    height: 48px;
+    padding: 10px 10px 6px 12px;
+  }
+
+  .close {
+    width: 36px;
+    height: 36px;
+  }
+
+  .options {
+    padding: 0 16px 20px;
+  }
+}

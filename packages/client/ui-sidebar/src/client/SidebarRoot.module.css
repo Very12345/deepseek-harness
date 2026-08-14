@@ -124,6 +124,18 @@
   cursor: pointer;
 }
 
+.saiWordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 23px;
+  font-weight: 720;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
 .iconButton {
   flex: none;
   display: inline-flex;
@@ -148,7 +160,7 @@
   height: 36px;
 }
 
-/* Rail logo swap: collapsed, the toggle rests as the whale mark (brand ink,
+/* Rail logo swap: collapsed, the toggle rests as the sai sail mark (brand ink,
    no hover circle) and hovering reveals the panel icon — the expand
    affordance (figma sidebar-hover flow). Expanded it is a plain panel icon. */
 .collapsed .toggle .panelIcon {

@@ -134,6 +134,8 @@ export function PermissionSelect({ value, locked, command, t }: PermissionSelect
         onSelect={choose}
         onClose={() => { setOpen(false) }}
         side="top"
+        portal
+        mobileSheet="medium"
         anchor={
           <button
             type="button"

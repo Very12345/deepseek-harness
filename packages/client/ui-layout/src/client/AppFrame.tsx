@@ -142,6 +142,34 @@ export function AppFrame({
   const cols = computeColumns(viewport, sidebarPreference, detailsSession === undefined ? 0 : panels.details)
   const colsRef = useRef(cols)
   colsRef.current = cols
+  const mobileSidebarWidth = Math.min(340, Math.max(280, viewport * 0.86))
+
+  // sai owns the native app bar on Android. Give it a stable source-level
+  // hook instead of making the WebView search for a localized button label.
+  useEffect(() => {
+    const toggle = () => {
+      // Desktop keeps details as a third column. On a phone an old open
+      // details state can cover the whole conversation, so navigation always
+      // dismisses it before showing the project drawer.
+      if (narrow) actions.closeDetails()
+      actions.toggleSidebar()
+    }
+    window.addEventListener('sai:navigation-toggle', toggle)
+    return () => { window.removeEventListener('sai:navigation-toggle', toggle) }
+  }, [actions, narrow])
+
+  // A mobile drawer follows normal Android navigation semantics: Escape (and
+  // the WebView back bridge that emits it) closes the drawer first.
+  useEffect(() => {
+    if (!narrow || sidebarCollapsed) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      actions.toggleSidebar()
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => { window.removeEventListener('keydown', closeOnEscape) }
+  }, [actions, narrow, sidebarCollapsed])
 
   // The drag base is the rendered width captured at drag start (grabbing a
   // concession-clamped panel must not jump back to the stored preference);
@@ -165,12 +193,22 @@ export function AppFrame({
     <div
       ref={frameRef}
       className={css.frame}
-      style={{ gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px` }}
+      style={{ gridTemplateColumns: narrow ? '0px minmax(0, 1fr) 0px' : `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px` }}
+      data-narrow={narrow || undefined}
+      data-sidebar-open={(narrow && !sidebarCollapsed) || undefined}
       data-sidebar-collapsed={sidebarCollapsed || undefined}
       data-details-collapsed={cols.details === 0 || undefined}
       data-dragging={dragging || undefined}
     >
-      <div className={css.sidebarCol}>
+      {narrow && !sidebarCollapsed && (
+        <button
+          type="button"
+          className={css.mobileScrim}
+          aria-label="关闭侧边栏"
+          onClick={() => { actions.toggleSidebar() }}
+        />
+      )}
+      <div className={css.sidebarCol} style={narrow ? { width: mobileSidebarWidth } : undefined}>
         {/* Render-site slot call with live concession output: a closed
             sidebar keeps the mounted slot at the compact-rail width, and the
             component sees its rendered state as owner params decided here
@@ -178,7 +216,7 @@ export function AppFrame({
             renders the rail UI too). */}
         {renderSlot('sidebar', {
           collapsed: sidebarCollapsed,
-          width: cols.sidebar,
+          width: narrow ? mobileSidebarWidth : cols.sidebar,
         })}
       </div>
       <>
@@ -194,8 +232,8 @@ export function AppFrame({
         {renderSlot('shell.overlay', {})}
       </div>
       {/* The collapsed rail is fixed-width: no resize handle while closed. */}
-      {!sidebarCollapsed && <DragHandle side="sidebar" left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
-      {cols.details > 0 && <DragHandle side="details" left={viewport - cols.details} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
+      {!narrow && !sidebarCollapsed && <DragHandle side="sidebar" left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
+      {!narrow && cols.details > 0 && <DragHandle side="details" left={viewport - cols.details} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
     </div>
   )
 }

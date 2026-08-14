@@ -4,6 +4,7 @@ import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/c
 import type {} from '@deepseek-ai/dsh-client-ui-tool/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type { InputTriggerService, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from './events.ts'
@@ -11,6 +12,7 @@ import { CordisActionRow } from './CordisActionRow.tsx'
 import { CordisDefineRow } from './CordisDefineRow.tsx'
 import { CordisRunRow } from './CordisRunRow.tsx'
 import { CordisPanel } from './CordisPanel.tsx'
+import { CordisMobileApprovalDock } from './CordisMobileApprovalDock.tsx'
 import { createCordisInventory } from './inventory.ts'
 import { CordisRunCardRegistry } from './run-card-index.ts'
 import type { CordisDynamicPort } from './dynamic-port.ts'
@@ -81,35 +83,45 @@ export function apply(ctx: ClientContext): void {
     inventory.refresh()
   })
 
+  const panelFace = (): CordisPanelFace => ({
+    hooks: {
+      inventory,
+      activeRuns: runner.activeRuns,
+      runErrors: runner.lastRunError,
+      loaded,
+      renderFailures: runner.renderFailures,
+    },
+    onApprove: (requestId, approveFutureVersions) => runner.approve(requestId, approveFutureVersions),
+    onDecline: requestId => runner.decline(requestId),
+    onRun: request => runner.startUserRun(request),
+    onStop: async (sessionId, pluginId) => {
+      const result = await port.stop(sessionId, pluginId)
+      inventory.refresh()
+      return result
+    },
+    onRemove: async (sessionId, pluginId) => {
+      const result = await port.remove(sessionId, pluginId)
+      if (result.ok) inventory.retire(pluginId)
+      inventory.refresh()
+      return result
+    },
+    onRefresh: () => { inventory.refresh() },
+  })
+
   ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
     name: 'sidebar.footer.action',
     id: 'cordis-panel',
     locale: NS,
-    inject: (): CordisPanelFace => ({
-      hooks: {
-        inventory,
-        activeRuns: runner.activeRuns,
-        runErrors: runner.lastRunError,
-        loaded,
-        renderFailures: runner.renderFailures,
-      },
-      onApprove: (requestId, approveFutureVersions) => runner.approve(requestId, approveFutureVersions),
-      onDecline: requestId => runner.decline(requestId),
-      onRun: request => runner.startUserRun(request),
-      onStop: async (sessionId, pluginId) => {
-        const result = await port.stop(sessionId, pluginId)
-        inventory.refresh()
-        return result
-      },
-      onRemove: async (sessionId, pluginId) => {
-        const result = await port.remove(sessionId, pluginId)
-        if (result.ok) inventory.retire(pluginId)
-        inventory.refresh()
-        return result
-      },
-      onRefresh: () => { inventory.refresh() },
-    }),
+    inject: panelFace,
   }, CordisPanel))
+
+  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
+    name: 'conversation.input.dock',
+    id: 'cordis-mobile-approval',
+    order: -100,
+    locale: NS,
+    inject: panelFace,
+  }, CordisMobileApprovalDock))
 
   const cardFace = (): CordisCardFace => ({ hooks: { inventory, loaded } })
   ctx.slots.inject('tool.call.toolview', () => ctx.slots.register({

@@ -18,7 +18,6 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  BrandWordmark, FishLogo,
   IconNewChatOutline16, IconPanelLeftOutline16,
   Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -35,6 +34,25 @@ const COLLAPSE_SETTLE_MS = 150
  * edge — on the way to the conversation, or around a portalled menu.
  */
 const SCROLLBAR_LINGER_MS = 2000
+
+/** sai's monochrome one-direction sail mark; ink follows the active theme. */
+function SaiSailLogo({ size = 24, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      {...(className === undefined ? {} : { className })}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path d="M11.2 3.1v13.2L4.6 14.8 11.2 3.1Z" fill="currentColor" />
+      <path d="M12.7 5.2v11.2l6.5-1.5-6.5-9.7Z" fill="currentColor" opacity=".56" />
+      <path d="M3.2 17.1c3.7.75 7.15.82 10.35.2 2.5-.48 4.85-.43 7.25.16-2.02 2.3-4.83 3.44-8.4 3.44-4.1 0-7.17-1.27-9.2-3.8Z" fill="currentColor" />
+      <path d="M2.8 21.5c4.8-.76 9.12-.67 12.98.28 2.02.5 3.84.42 5.42-.22" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity=".42" />
+    </svg>
+  )
+}
 
 /**
  * Render the sidebar column shell.
@@ -137,10 +155,13 @@ export function SidebarRoot({
             aria-label={t('session.new.label')}
             onClick={() => { startSession() }}
           >
-            <BrandWordmark />
+            <span className={css.saiWordmark}>
+              <SaiSailLogo size={24} />
+              <span>sai</span>
+            </span>
           </button>
         )}
-        {/* Rail resting state is the whale mark; hovering swaps in the panel
+        {/* Rail resting state is the sai sail mark; hovering swaps in the panel
             icon (the expand affordance, figma sidebar-hover flow). */}
         <Tooltip label={collapsed ? t('toggle.open') : t('toggle.collapse')} delayMs={500}>
           <button
@@ -149,7 +170,7 @@ export function SidebarRoot({
             aria-label={collapsed ? t('toggle.open') : t('toggle.collapse')}
             onClick={() => { toggleSidebar() }}
           >
-            {!wide && <FishLogo className={css.railFish} size={24} />}
+            {!wide && <SaiSailLogo className={css.railFish} size={24} />}
             {/* Rail icons render at 18 (figma rail spec); expanded keeps the glyph-native sizes. */}
             <IconPanelLeftOutline16 className={css.panelIcon} size={wide ? 16 : 18} />
           </button>

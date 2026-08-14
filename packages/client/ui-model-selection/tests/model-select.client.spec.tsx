@@ -131,6 +131,7 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(trigger)
     expect(screen.queryByRole('menuitem', { name: /推理等级/ })).toBeNull()
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /DeepSeek/ }))
     expect(screen.queryByText('removed-model')).toBeNull()
     expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeTruthy()
   })
@@ -160,11 +161,41 @@ describe('ModelSelect reasoning effort', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /选择模型|当前/ }))
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /DeepSeek/ }))
     fireEvent.click(screen.getByRole('menuitemradio', { name: /DeepSeek-V4-Pro/ }))
     const toast = await screen.findByRole('alert')
     expect(toast.textContent).toContain('模型操作失败：model-unavailable: session already contains images')
     // The selection failure does not render the in-menu load strip (no Retry).
     expect(screen.queryByRole('button', { name: '重试' })).toBeNull()
+  })
+
+  it('drills through provider and filters a large model list', () => {
+    const directory = createSnapshotStore(state({
+      groups: [{
+        id: 'provider',
+        name: 'Bailian',
+        models: [
+          { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash' },
+          { id: 'qwen-plus', name: 'Qwen Plus' },
+        ],
+      }],
+      current: { provider: 'provider', model: 'deepseek-v4-flash' },
+    }))
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: /DeepSeek V4 Flash/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Bailian/ }))
+    fireEvent.change(screen.getByRole('searchbox', { name: '搜索模型' }), { target: { value: 'qwen' } })
+    expect(screen.queryByRole('menuitemradio', { name: /DeepSeek/ })).toBeNull()
+    expect(screen.getByRole('menuitemradio', { name: /Qwen Plus/ })).toBeTruthy()
   })
 
   it('renders no Agent-bound control for an addressed subagent session', () => {

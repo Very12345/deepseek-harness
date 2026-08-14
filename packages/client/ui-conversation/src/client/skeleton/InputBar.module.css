@@ -299,6 +299,51 @@
   container-type: inline-size;
 }
 
+@media (max-width: 1280px) {
+  .row {
+    gap: 4px;
+    overflow: hidden;
+    justify-content: flex-start;
+  }
+
+  .row .tools {
+    display: flex;
+    flex: none;
+    gap: 4px;
+  }
+
+  .row .modes {
+    display: contents;
+  }
+
+  .row .trailing {
+    display: flex;
+    flex: 1 1 0;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .row .leftExtras,
+  .row .rightExtras,
+  .row .planSeat {
+    display: none;
+  }
+
+  .row .contextMeter {
+    display: none;
+  }
+
+  .row .modelSeat {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .row .modelSeat > * {
+    width: 100%;
+  }
+}
+
 .tools,
 .modes,
 .trailing {
@@ -321,6 +366,16 @@
 .trailing {
   flex: none;
   gap: 12px;
+}
+
+.leftExtras,
+.rightExtras,
+.planSeat,
+.modelSeat,
+.contextMeter {
+  display: flex;
+  min-width: 0;
+  align-items: center;
 }
 
 /* Attach circle (figma + control): 28px, selector fill, primary glyph. */
