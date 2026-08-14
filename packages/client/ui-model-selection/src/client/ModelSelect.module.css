@@ -384,6 +384,25 @@
     -webkit-text-fill-color: #5f6368;
   }
 
+  .menu .cellLabel,
+  .menu .modelName,
+  .menu .description,
+  .menu .paneHeader,
+  .menu .status,
+  .menu .empty {
+    color: #202124 !important;
+    -webkit-text-fill-color: #202124 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .menu .cell > *,
+  .menu .option > *,
+  .menu svg {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
   .groupTitle {
     padding: 8px 12px 5px;
   }
@@ -399,5 +418,15 @@
   :global(body[data-ds-dark-theme]) .providerCheck {
     color: #aeb4bd !important;
     -webkit-text-fill-color: #aeb4bd;
+  }
+
+  :global(body[data-ds-dark-theme]) .menu .cellLabel,
+  :global(body[data-ds-dark-theme]) .menu .modelName,
+  :global(body[data-ds-dark-theme]) .menu .description,
+  :global(body[data-ds-dark-theme]) .menu .paneHeader,
+  :global(body[data-ds-dark-theme]) .menu .status,
+  :global(body[data-ds-dark-theme]) .menu .empty {
+    color: #f5f6f7 !important;
+    -webkit-text-fill-color: #f5f6f7 !important;
   }
 }
