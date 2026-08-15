@@ -36,7 +36,7 @@ const COLLAPSE_SETTLE_MS = 150
 const SCROLLBAR_LINGER_MS = 2000
 
 /** sai's monochrome one-direction sail mark; ink follows the active theme. */
-function SaiSailLogo({ size = 24, className }: { size?: number; className?: string }) {
+function SaiSailLogo({ size = 24, className }: { size?: number; className?: string | undefined }) {
   return (
     <svg
       width={size}
