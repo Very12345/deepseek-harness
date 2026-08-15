@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
@@ -51,7 +51,7 @@ afterEach(() => {
 })
 
 describe('ModelSelect reasoning effort', () => {
-  it('uses one platform-native model and effort list on mobile', async () => {
+  it('uses one compact DSH model and effort menu on mobile', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
     const directory = createSnapshotStore<ModelDirectoryState>(state())
     const select = vi.fn().mockResolvedValue(true)
@@ -68,14 +68,13 @@ describe('ModelSelect reasoning effort', () => {
       </div>,
     )
 
-    const picker = screen.getByRole('combobox', { name: /选择模型，当前/ })
-    expect(screen.queryByRole('menu')).toBeNull()
-    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
-      'DeepSeek · DeepSeek-V4-Flash · Off',
-      'DeepSeek · DeepSeek-V4-Flash · High',
-      'DeepSeek · DeepSeek-V4-Flash · Max',
-    ])
-    fireEvent.change(picker, { target: { value: '2' } })
+    const trigger = screen.getByRole('button', { name: /选择模型，当前/ })
+    fireEvent.click(trigger)
+    expect(screen.getByRole('menu').closest('[data-composer-card]')).not.toBeNull()
+    const effort = within(screen.getByRole('group', { name: '推理等级' }))
+    expect(effort.getAllByRole('menuitemradio').map(option => option.textContent))
+      .toEqual(['Off', 'High', 'Max'])
+    fireEvent.click(effort.getByRole('menuitemradio', { name: 'Max' }))
     await waitFor(() => {
       expect(select).toHaveBeenCalledWith({
         provider: 'deepseek-official',
@@ -104,11 +103,10 @@ describe('ModelSelect reasoning effort', () => {
       name: '选择模型，当前 DeepSeek-V4-Flash，推理等级 High',
     })
     fireEvent.click(trigger)
-    fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    expect(screen.getAllByRole('menuitemradio').map(item => item.textContent))
-      .toEqual(['Off', 'High', 'MaxLargest budget'])
-
-    fireEvent.click(screen.getByRole('menuitemradio', { name: /Max/ }))
+    const effort = within(screen.getByRole('group', { name: '推理等级' }))
+    expect(effort.getAllByRole('menuitemradio').map(item => item.textContent))
+      .toEqual(['Off', 'High', 'Max'])
+    fireEvent.click(effort.getByRole('menuitemradio', { name: 'Max' }))
     await waitFor(() => {
       expect(select).toHaveBeenCalledWith({
         provider: 'deepseek-official',
@@ -144,8 +142,8 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(screen.getByRole('button', {
       name: '选择模型，当前 Model，推理等级 Default',
     }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
-    expect(screen.getAllByRole('menuitemradio').map(item => item.textContent))
+    const effort = within(screen.getByRole('group', { name: '推理等级' }))
+    expect(effort.getAllByRole('menuitemradio').map(item => item.textContent))
       .toEqual(['Default', 'Standard'])
   })
 
@@ -166,9 +164,7 @@ describe('ModelSelect reasoning effort', () => {
     const trigger = screen.getByRole('button', { name: '选择模型' })
     expect(trigger.textContent).toContain('选择模型')
     fireEvent.click(trigger)
-    expect(screen.queryByRole('menuitem', { name: /推理等级/ })).toBeNull()
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /DeepSeek/ }))
+    expect(screen.queryByRole('group', { name: /推理等级/ })).toBeNull()
     expect(screen.queryByText('removed-model')).toBeNull()
     expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeTruthy()
   })
@@ -197,8 +193,6 @@ describe('ModelSelect reasoning effort', () => {
     />)
 
     fireEvent.click(screen.getByRole('button', { name: /选择模型|当前/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /DeepSeek/ }))
     fireEvent.click(screen.getByRole('menuitemradio', { name: /DeepSeek-V4-Pro/ }))
     const toast = await screen.findByRole('alert')
     expect(toast.textContent).toContain('模型操作失败：model-unavailable: session already contains images')
@@ -206,7 +200,7 @@ describe('ModelSelect reasoning effort', () => {
     expect(screen.queryByRole('button', { name: '重试' })).toBeNull()
   })
 
-  it('drills through provider and filters a large model list', () => {
+  it('filters a provider-grouped model list without drilling into another pane', () => {
     const directory = createSnapshotStore(state({
       groups: [{
         id: 'provider',
@@ -228,8 +222,6 @@ describe('ModelSelect reasoning effort', () => {
     />)
 
     fireEvent.click(screen.getByRole('button', { name: /DeepSeek V4 Flash/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /Bailian/ }))
     fireEvent.change(screen.getByRole('searchbox', { name: '搜索模型' }), { target: { value: 'qwen' } })
     expect(screen.queryByRole('menuitemradio', { name: /DeepSeek/ })).toBeNull()
     expect(screen.getByRole('menuitemradio', { name: /Qwen Plus/ })).toBeTruthy()
