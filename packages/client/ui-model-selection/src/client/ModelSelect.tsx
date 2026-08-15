@@ -230,6 +230,13 @@ export function ModelSelect(
     : effortLabel === undefined
       ? t('trigger.aria', { model: modelLabel })
       : t('trigger.ariaEffort', { model: modelLabel, effort: effortLabel })
+  // Android WebView 150 can leave a body-portalled, fixed menu surface in a
+  // separate compositor layer while dropping its descendants under tile
+  // pressure. The result is the exact "empty white capsule" seen on phones:
+  // the border paints, but the provider/model rows do not. Keep the mobile
+  // sheet in the composer's DOM tree; desktop still portals into the shell
+  // overlay so it can escape the desktop column's stacking context.
+  const mobile = typeof window !== 'undefined' && window.innerWidth <= 1280
   itemRefs.current = []
   let itemIndex = 0
   const itemRef = () => {
@@ -271,177 +278,182 @@ export function ModelSelect(
         <IconChevronDownOutline14 className={clsx(css.chevron, open && css.chevronOpen)} />
       </button>
 
-      {open && createPortal((
-        <div
-          ref={menuRef}
-          id={`${id}-menu`}
-          className={css.menu}
-          data-pane={pane}
-          style={{
-            bottom: `${menuBottom()}px`,
-          }}
-          role="menu"
-          aria-label={t('menu.aria')}
-          aria-busy={state.status === 'loading' || busy}
-        >
-          {pane === 'root' && (
-            <>
-              <div
-                role="menuitem"
-                tabIndex={0}
-                className={css.cell}
-                onClick={() => { setPane('provider') }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') setPane('provider')
-                }}
-              >
-                <span className={css.cellLabel} style={{ color: '#202124', WebkitTextFillColor: '#202124' }}>{t('menu.model')}</span>
-                <span className={css.cellValue} style={{ color: '#5f6368', WebkitTextFillColor: '#5f6368' }}>{modelLabel}</span>
-                <IconChevronRightOutline14 className={css.cellChevron} />
-              </div>
-              {reasoning !== undefined && (
+      {open && (() => {
+        const menu = (
+          <div
+            ref={menuRef}
+            id={`${id}-menu`}
+            className={css.menu}
+            data-pane={pane}
+            style={{
+              bottom: `${menuBottom()}px`,
+            }}
+            role="menu"
+            aria-label={t('menu.aria')}
+            aria-busy={state.status === 'loading' || busy}
+          >
+            {pane === 'root' && (
+              <>
                 <div
                   role="menuitem"
                   tabIndex={0}
                   className={css.cell}
-                  onClick={() => { setPane('effort') }}
+                  onClick={() => { setPane('provider') }}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') setPane('effort')
+                    if (event.key === 'Enter' || event.key === ' ') setPane('provider')
                   }}
                 >
-                  <span className={css.cellLabel} style={{ color: '#202124', WebkitTextFillColor: '#202124' }}>{t('menu.effort')}</span>
-                  <span className={css.cellValue} style={{ color: '#5f6368', WebkitTextFillColor: '#5f6368' }}>{effortLabel}</span>
+                  <span className={css.cellLabel} style={{ color: '#202124', WebkitTextFillColor: '#202124' }}>{t('menu.model')}</span>
+                  <span className={css.cellValue} style={{ color: '#5f6368', WebkitTextFillColor: '#5f6368' }}>{modelLabel}</span>
                   <IconChevronRightOutline14 className={css.cellChevron} />
                 </div>
-              )}
-            </>
-          )}
-
-          {pane === 'provider' && (
-            <>
-              {state.status === 'loading' && (
-                <div className={css.status}>{t('status.loading')}</div>
-              )}
-              {state.error !== null && lastActionRef.current === 'load' && (
-                <div className={css.error}>
-                  <span>{t('error.action', { message: state.error })}</span>
-                  <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
-                </div>
-              )}
-              {state.failures.map(failure => (
-                <div className={css.warning} key={failure.id}>
-                  <span>{t('warning.groupLoad', { name: failure.name, message: failure.message })}</span>
-                  <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
-                </div>
-              ))}
-              <div className={clsx(css.groups, 'scrollable')}>
-                {state.groups.map(group => (
-                  <button
-                    ref={itemRef()}
-                    type="button"
+                {reasoning !== undefined && (
+                  <div
                     role="menuitem"
+                    tabIndex={0}
                     className={css.cell}
-                    key={group.id}
-                    onClick={() => {
-                      setProviderId(group.id)
-                      setModelSearch('')
-                      setPane('model')
+                    onClick={() => { setPane('effort') }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') setPane('effort')
                     }}
                   >
-                    <span className={css.cellLabel}>{group.name}</span>
-                    <span className={css.cellValue}>{group.models.length}</span>
-                    {currentProvider?.id === group.id && <IconCheckOutline16 className={css.providerCheck} />}
+                    <span className={css.cellLabel} style={{ color: '#202124', WebkitTextFillColor: '#202124' }}>{t('menu.effort')}</span>
+                    <span className={css.cellValue} style={{ color: '#5f6368', WebkitTextFillColor: '#5f6368' }}>{effortLabel}</span>
                     <IconChevronRightOutline14 className={css.cellChevron} />
-                  </button>
-                ))}
-              </div>
-              {state.status === 'ready' && choices.length === 0 && (
-                <div className={css.empty}>{t('empty.models')}</div>
-              )}
-            </>
-          )}
+                  </div>
+                )}
+              </>
+            )}
 
-          {pane === 'model' && selectedProvider !== undefined && (
-            <>
-              <div className={css.paneHeader}>
-                <button type="button" className={css.back} aria-label="返回提供商" onClick={() => { setPane('provider') }}>
-                  <IconChevronRightOutline14 />
-                </button>
-                <strong>{selectedProvider.name}</strong>
-              </div>
-              <input
-                className={css.search}
-                type="search"
-                value={modelSearch}
-                placeholder="搜索模型"
-                aria-label="搜索模型"
-                autoFocus
-                onChange={(event) => { setModelSearch(event.currentTarget.value) }}
-              />
-              <div className={clsx(css.groups, 'scrollable')}>
-                {visibleModels.map((model) => {
-                  const selected = state.current?.provider === selectedProvider.id && state.current.model === model.id
-                  return (
+            {pane === 'provider' && (
+              <>
+                {state.status === 'loading' && (
+                  <div className={css.status}>{t('status.loading')}</div>
+                )}
+                {state.error !== null && lastActionRef.current === 'load' && (
+                  <div className={css.error}>
+                    <span>{t('error.action', { message: state.error })}</span>
+                    <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
+                  </div>
+                )}
+                {state.failures.map(failure => (
+                  <div className={css.warning} key={failure.id}>
+                    <span>{t('warning.groupLoad', { name: failure.name, message: failure.message })}</span>
+                    <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
+                  </div>
+                ))}
+                <div className={clsx(css.groups, 'scrollable')}>
+                  {state.groups.map(group => (
+                    <button
+                      ref={itemRef()}
+                      type="button"
+                      role="menuitem"
+                      className={css.cell}
+                      key={group.id}
+                      onClick={() => {
+                        setProviderId(group.id)
+                        setModelSearch('')
+                        setPane('model')
+                      }}
+                    >
+                      <span className={css.cellLabel}>{group.name}</span>
+                      <span className={css.cellValue}>{group.models.length}</span>
+                      {currentProvider?.id === group.id && <IconCheckOutline16 className={css.providerCheck} />}
+                      <IconChevronRightOutline14 className={css.cellChevron} />
+                    </button>
+                  ))}
+                </div>
+                {state.status === 'ready' && choices.length === 0 && (
+                  <div className={css.empty}>{t('empty.models')}</div>
+                )}
+              </>
+            )}
+
+            {pane === 'model' && selectedProvider !== undefined && (
+              <>
+                <div className={css.paneHeader}>
+                  <button type="button" className={css.back} aria-label="返回提供商" onClick={() => { setPane('provider') }}>
+                    <IconChevronRightOutline14 />
+                  </button>
+                  <strong>{selectedProvider.name}</strong>
+                </div>
+                <input
+                  className={css.search}
+                  type="search"
+                  value={modelSearch}
+                  placeholder="搜索模型"
+                  aria-label="搜索模型"
+                  autoFocus
+                  onChange={(event) => { setModelSearch(event.currentTarget.value) }}
+                />
+                <div className={clsx(css.groups, 'scrollable')}>
+                  {visibleModels.map((model) => {
+                    const selected = state.current?.provider === selectedProvider.id && state.current.model === model.id
+                    return (
+                      <button
+                        ref={itemRef()}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={selected}
+                        className={clsx(css.option, selected && css.selected)}
+                        key={model.id}
+                        title={model.name}
+                        disabled={busy}
+                        onClick={() => { choose({ provider: selectedProvider.id, model: model.id }) }}
+                      >
+                        <span className={css.optionCopy}>
+                          <span className={css.modelName}>{model.name}</span>
+                          {model.description !== undefined && <span className={css.description}>{model.description}</span>}
+                        </span>
+                        <span className={css.check}>{selected ? <IconCheckOutline16 /> : null}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                {visibleModels.length === 0 && <div className={css.empty}>没有匹配的模型</div>}
+              </>
+            )}
+
+            {pane === 'effort' && (
+              <>
+                {state.error !== null && lastActionRef.current === 'load' && (
+                  <div className={css.error}>
+                    <span>{t('error.action', { message: state.error })}</span>
+                    <button type="button" className={css.retry} onClick={reload}>{t('action.reload')}</button>
+                  </div>
+                )}
+                {effortChoices.length === 0
+                  ? <div className={css.empty}>{t('empty.efforts')}</div>
+                  : effortChoices.map(level => (
                     <button
                       ref={itemRef()}
                       type="button"
                       role="menuitemradio"
-                      aria-checked={selected}
-                      className={clsx(css.option, selected && css.selected)}
-                      key={model.id}
-                      title={model.name}
+                      aria-checked={effectiveEffort === level.effort}
+                      className={clsx(css.option, effectiveEffort === level.effort && css.selected)}
+                      key={level.key}
                       disabled={busy}
-                      onClick={() => { choose({ provider: selectedProvider.id, model: model.id }) }}
+                      onClick={() => { chooseEffort(level.effort) }}
                     >
                       <span className={css.optionCopy}>
-                        <span className={css.modelName}>{model.name}</span>
-                        {model.description !== undefined && <span className={css.description}>{model.description}</span>}
+                        <span className={css.modelName}>{level.label}</span>
+                        {level.description !== undefined && (
+                          <span className={css.description}>{level.description}</span>
+                        )}
                       </span>
-                      <span className={css.check}>{selected ? <IconCheckOutline16 /> : null}</span>
+                      <span className={css.check}>
+                        {effectiveEffort === level.effort ? <IconCheckOutline16 /> : null}
+                      </span>
                     </button>
-                  )
-                })}
-              </div>
-              {visibleModels.length === 0 && <div className={css.empty}>没有匹配的模型</div>}
-            </>
-          )}
-
-          {pane === 'effort' && (
-            <>
-              {state.error !== null && lastActionRef.current === 'load' && (
-                <div className={css.error}>
-                  <span>{t('error.action', { message: state.error })}</span>
-                  <button type="button" className={css.retry} onClick={reload}>{t('action.reload')}</button>
-                </div>
-              )}
-              {effortChoices.length === 0
-                ? <div className={css.empty}>{t('empty.efforts')}</div>
-                : effortChoices.map(level => (
-                  <button
-                    ref={itemRef()}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={effectiveEffort === level.effort}
-                    className={clsx(css.option, effectiveEffort === level.effort && css.selected)}
-                    key={level.key}
-                    disabled={busy}
-                    onClick={() => { chooseEffort(level.effort) }}
-                  >
-                    <span className={css.optionCopy}>
-                      <span className={css.modelName}>{level.label}</span>
-                      {level.description !== undefined && (
-                        <span className={css.description}>{level.description}</span>
-                      )}
-                    </span>
-                    <span className={css.check}>
-                      {effectiveEffort === level.effort ? <IconCheckOutline16 /> : null}
-                    </span>
-                  </button>
-                ))}
-            </>
-          )}
-        </div>
-      ), document.querySelector<HTMLElement>('[data-shell-overlay]') ?? document.body)}
+                  ))}
+              </>
+            )}
+          </div>
+        )
+        return mobile
+          ? menu
+          : createPortal(menu, document.querySelector<HTMLElement>('[data-shell-overlay]') ?? document.body)
+      })()}
       {toast !== null && (
         <Toast
           key={toast.seq}

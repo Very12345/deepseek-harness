@@ -48,6 +48,26 @@ function state(overrides: Partial<ModelDirectoryState> = {}): ModelDirectoryStat
 afterEach(cleanup)
 
 describe('ModelSelect reasoning effort', () => {
+  it('keeps the mobile menu in the composer tree instead of a body portal', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
+    const directory = createSnapshotStore<ModelDirectoryState>(state())
+    const view = render(
+      <div data-composer-card>
+        <ModelSelect
+          locked={false}
+          available
+          directory={directory}
+          load={vi.fn()}
+          select={vi.fn().mockResolvedValue(true)}
+          t={t}
+        />
+      </div>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /选择模型，当前/ }))
+    expect(screen.getByRole('menu').closest('[data-composer-card]')).toBe(view.container.firstElementChild)
+  })
+
   it('renders adapter metadata and submits the effort as part of the session selection', async () => {
     const directory = createSnapshotStore<ModelDirectoryState>(state())
     const select = vi.fn(async (selection: ModelSelection) => {
