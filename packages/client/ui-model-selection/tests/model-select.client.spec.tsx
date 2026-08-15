@@ -45,27 +45,44 @@ function state(overrides: Partial<ModelDirectoryState> = {}): ModelDirectoryStat
   }
 }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1440 })
+})
 
 describe('ModelSelect reasoning effort', () => {
-  it('keeps the mobile menu in the composer tree instead of a body portal', () => {
+  it('uses one platform-native model and effort list on mobile', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
     const directory = createSnapshotStore<ModelDirectoryState>(state())
-    const view = render(
+    const select = vi.fn().mockResolvedValue(true)
+    render(
       <div data-composer-card>
         <ModelSelect
           locked={false}
           available
           directory={directory}
           load={vi.fn()}
-          select={vi.fn().mockResolvedValue(true)}
+          select={select}
           t={t}
         />
       </div>,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /选择模型，当前/ }))
-    expect(screen.getByRole('menu').closest('[data-composer-card]')).toBe(view.container.firstElementChild)
+    const picker = screen.getByRole('combobox', { name: /选择模型，当前/ })
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
+      'DeepSeek · DeepSeek-V4-Flash · Off',
+      'DeepSeek · DeepSeek-V4-Flash · High',
+      'DeepSeek · DeepSeek-V4-Flash · Max',
+    ])
+    fireEvent.change(picker, { target: { value: '2' } })
+    await waitFor(() => {
+      expect(select).toHaveBeenCalledWith({
+        provider: 'deepseek-official',
+        model: 'deepseek-v4-flash',
+        reasoningEffort: 'max',
+      })
+    })
   })
 
   it('renders adapter metadata and submits the effort as part of the session selection', async () => {

@@ -331,6 +331,33 @@
     background: var(--dsw-specific-selector);
   }
 
+  .nativeRoot {
+    max-width: 132px;
+  }
+
+  .nativeSelect {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 132px;
+    height: 36px;
+    overflow: hidden;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 24px;
+    outline: none;
+    background: var(--dsw-specific-selector);
+    color: var(--dsw-alias-label-secondary);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nativeSelect:focus-visible {
+    box-shadow: 0 0 0 2px var(--dsw-alias-border-l3);
+  }
+
   .menu {
     position: fixed;
     /* The component anchors this sheet to the whole composer card on mobile,

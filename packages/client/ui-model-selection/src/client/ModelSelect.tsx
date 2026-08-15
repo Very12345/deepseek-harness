@@ -37,6 +37,13 @@ interface EffortChoice {
   description?: string
 }
 
+/** One platform-native mobile option: model and effort are chosen together. */
+interface NativeChoice {
+  key: string
+  label: string
+  selection: ModelSelection
+}
+
 /**
  * Render the composer model seat.
  * @param props - owner share (locked) + injected face (shared directory
@@ -115,6 +122,35 @@ export function ModelSelect(
       })),
     ], [reasoning, t])
   const busy = state.status === 'selecting'
+  const nativeChoices = useMemo<readonly NativeChoice[]>(() => state.groups.flatMap(group =>
+    group.models.flatMap((model) => {
+      const base = `${group.name} · ${model.name}`
+      if (model.reasoning === undefined) {
+        return [{
+          key: `${group.id}:${model.id}`,
+          label: base,
+          selection: { provider: group.id, model: model.id },
+        }]
+      }
+      const advertisedEfforts: readonly ModelReasoningEffort[] = model.reasoning.efforts.length > 0
+        ? model.reasoning.efforts
+        : model.reasoning.defaultEffort === undefined
+          ? []
+          : [{ id: model.reasoning.defaultEffort, name: model.reasoning.defaultEffort }]
+      const efforts: Array<ModelReasoningEffort | undefined> = [
+        ...model.reasoning.defaultEffort === undefined ? [undefined] : [],
+        ...advertisedEfforts,
+      ]
+      return efforts.map(effort => ({
+        key: `${group.id}:${model.id}:${effort?.id ?? 'provider-default'}`,
+        label: `${base} · ${effort?.name ?? t('effort.providerDefault')}`,
+        selection: {
+          provider: group.id,
+          model: model.id,
+          ...effort === undefined ? {} : { reasoningEffort: effort.id },
+        },
+      }))
+    })), [state.groups, t])
 
   const reload = (): void => {
     lastActionRef.current = 'load'
@@ -200,7 +236,15 @@ export function ModelSelect(
   }
 
   const choose = (selection: ModelSelection): void => {
-    if (state.current?.provider === selection.provider && state.current.model === selection.model) {
+    const targetModel = state.groups
+      .find(group => group.id === selection.provider)?.models
+      .find(model => model.id === selection.model)
+    const targetEffort = selection.reasoningEffort ?? targetModel?.reasoning?.defaultEffort
+    if (
+      state.current?.provider === selection.provider &&
+      state.current.model === selection.model &&
+      effectiveEffort === targetEffort
+    ) {
       close(true)
       return
     }
@@ -230,13 +274,52 @@ export function ModelSelect(
     : effortLabel === undefined
       ? t('trigger.aria', { model: modelLabel })
       : t('trigger.ariaEffort', { model: modelLabel, effort: effortLabel })
-  // Android WebView 150 can leave a body-portalled, fixed menu surface in a
-  // separate compositor layer while dropping its descendants under tile
-  // pressure. The result is the exact "empty white capsule" seen on phones:
-  // the border paints, but the provider/model rows do not. Keep the mobile
-  // sheet in the composer's DOM tree; desktop still portals into the shell
-  // overlay so it can escape the desktop column's stacking context.
+  // Android WebView on some vendor ROMs paints a custom dropdown surface but
+  // drops its descendants. Use the platform picker on phones: it is a true
+  // single-level list and bypasses WebView overlay composition entirely.
   const mobile = typeof window !== 'undefined' && window.innerWidth <= 1280
+  const nativeCurrentIndex = nativeChoices.findIndex((choice) => {
+    if (choice.selection.provider !== state.current?.provider || choice.selection.model !== state.current.model) {
+      return false
+    }
+    const model = state.groups
+      .find(group => group.id === choice.selection.provider)?.models
+      .find(entry => entry.id === choice.selection.model)
+    return (choice.selection.reasoningEffort ?? model?.reasoning?.defaultEffort) === effectiveEffort
+  })
+
+  if (mobile) {
+    return (
+      <div ref={rootRef} className={clsx(css.root, css.nativeRoot)}>
+        <select
+          className={css.nativeSelect}
+          aria-label={triggerAria}
+          title={triggerLabel}
+          value={nativeCurrentIndex < 0 ? '' : String(nativeCurrentIndex)}
+          disabled={locked || busy}
+          onChange={(event) => {
+            const choice = nativeChoices[Number(event.currentTarget.value)]
+            if (choice !== undefined) choose(choice.selection)
+          }}
+        >
+          {nativeCurrentIndex < 0 && <option value="">{t('trigger.fallback')}</option>}
+          {nativeChoices.map((choice, index) => (
+            <option key={choice.key} value={String(index)}>{choice.label}</option>
+          ))}
+        </select>
+        {toast !== null && (
+          <Toast
+            key={toast.seq}
+            text={toast.text}
+            icon={<IconWarningOutline16 />}
+            anchor={rootRef.current?.closest<HTMLElement>('[data-composer-card]') ?? null}
+            onDone={() => { setToast(null) }}
+          />
+        )}
+      </div>
+    )
+  }
+
   itemRefs.current = []
   let itemIndex = 0
   const itemRef = () => {
@@ -450,9 +533,7 @@ export function ModelSelect(
             )}
           </div>
         )
-        return mobile
-          ? menu
-          : createPortal(menu, document.querySelector<HTMLElement>('[data-shell-overlay]') ?? document.body)
+        return createPortal(menu, document.querySelector<HTMLElement>('[data-shell-overlay]') ?? document.body)
       })()}
       {toast !== null && (
         <Toast
