@@ -70,7 +70,9 @@ describe('ModelSelect reasoning effort', () => {
 
     const trigger = screen.getByRole('button', { name: /选择模型，当前/ })
     fireEvent.click(trigger)
-    expect(screen.getByRole('menu').closest('[data-composer-card]')).not.toBeNull()
+    const menu = screen.getByRole('menu')
+    expect(menu.parentElement).toBe(document.body)
+    await waitFor(() => { expect(menu.style.width).not.toBe('') })
     const effort = within(screen.getByRole('group', { name: '推理等级' }))
     expect(effort.getAllByRole('menuitemradio').map(option => option.textContent))
       .toEqual(['Off', 'High', 'Max'])

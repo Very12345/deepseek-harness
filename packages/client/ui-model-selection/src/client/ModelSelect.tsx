@@ -13,8 +13,9 @@
  */
 import {
   useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
-  type KeyboardEvent, type FocusEvent,
+  type CSSProperties, type KeyboardEvent, type FocusEvent,
 } from 'react'
+import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import {
@@ -57,7 +58,9 @@ export function ModelSelect(
   const toastSeq = useRef(0)
   const rootRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
   const id = useId()
 
   const choices = useMemo(() => state.groups.flatMap(group =>
@@ -124,10 +127,47 @@ export function ModelSelect(
   useEffect(() => {
     if (!open) return
     const closeOutside = (event: MouseEvent): void => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Node
+      if (!rootRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
     }
     document.addEventListener('mousedown', closeOutside)
     return () => { document.removeEventListener('mousedown', closeOutside) }
+  }, [open])
+
+  // The composer lives inside multiple scroll/clip regions. Rendering the
+  // model directory as its child works on desktop but WebView can reduce it
+  // to the card's one-pixel overflow edge. Anchor a body portal to the trigger
+  // instead, and recompute it for keyboard/viewport changes.
+  useEffect(() => {
+    if (!open) return
+    const positionMenu = (): void => {
+      const trigger = triggerRef.current
+      if (trigger === null) return
+      const rect = trigger.getBoundingClientRect()
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+      const margin = 12
+      const width = Math.min(300, Math.max(220, viewportWidth - margin * 2))
+      const left = Math.max(margin, Math.min(rect.right - width, viewportWidth - width - margin))
+      const availableAbove = Math.max(180, rect.top - margin - 8)
+      setMenuStyle({
+        left,
+        bottom: Math.max(margin, viewportHeight - rect.top + 8),
+        width,
+        maxHeight: Math.min(390, availableAbove),
+      })
+    }
+    positionMenu()
+    window.addEventListener('resize', positionMenu, { passive: true })
+    window.addEventListener('scroll', positionMenu, { passive: true, capture: true })
+    window.visualViewport?.addEventListener('resize', positionMenu, { passive: true })
+    window.visualViewport?.addEventListener('scroll', positionMenu, { passive: true })
+    return () => {
+      window.removeEventListener('resize', positionMenu)
+      window.removeEventListener('scroll', positionMenu, { capture: true })
+      window.visualViewport?.removeEventListener('resize', positionMenu)
+      window.visualViewport?.removeEventListener('scroll', positionMenu)
+    }
   }, [open])
 
   if (!available) return null
@@ -165,7 +205,10 @@ export function ModelSelect(
   }
 
   const onBlur = (event: FocusEvent<HTMLDivElement>): void => {
-    if (event.relatedTarget instanceof Node && rootRef.current?.contains(event.relatedTarget)) return
+    if (
+      event.relatedTarget instanceof Node &&
+      (rootRef.current?.contains(event.relatedTarget) || menuRef.current?.contains(event.relatedTarget))
+    ) return
     close()
   }
 
@@ -252,13 +295,17 @@ export function ModelSelect(
         <IconChevronDownOutline14 className={clsx(css.chevron, open && css.chevronOpen)} />
       </button>
 
-      {open && (
+      {open && createPortal((
         <div
+          ref={menuRef}
           id={`${id}-menu`}
           className={css.menu}
+          style={menuStyle}
           role="menu"
           aria-label={t('menu.aria')}
           aria-busy={state.status === 'loading' || busy}
+          onKeyDown={onRootKeyDown}
+          onBlur={onBlur}
         >
           {state.status === 'loading' && <div className={css.status}>{t('status.loading')}</div>}
           {state.error !== null && lastActionRef.current === 'load' && (
@@ -333,7 +380,7 @@ export function ModelSelect(
             <div className={css.empty}>没有匹配的模型</div>
           )}
         </div>
-      )}
+      ), document.body)}
       {toast !== null && (
         <Toast
           key={toast.seq}
